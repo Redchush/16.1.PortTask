@@ -1,11 +1,13 @@
 package warehouse;
 
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class Warehouse {
+
+	private final static Logger logger = Logger.getRootLogger();
 	private List<Container> containerList;
 	private int size;
 	//private Lock lock;
@@ -13,7 +15,7 @@ public class Warehouse {
 	public Warehouse(int size) {
 		containerList = new ArrayList<Container>(); // changed : so was impossible to know how much
 													// containers in warehouse at any moment
-		//lock = new ReentrantLock();
+													//lock = new ReentrantLock();
 		this.size = size;
 	}
 
@@ -25,6 +27,8 @@ public class Warehouse {
 		boolean result = false;
 		if(containerList.size() + containers.size() <= size){
 			result = containerList.addAll(containers);
+		} else {
+			logger.debug("Can't add to warehouse with " + getFreeSize() + " " + containers.size() + " the containers ");
 		}
 		return result;
 	}
@@ -41,11 +45,13 @@ public class Warehouse {
 			List<Container> cargo = new ArrayList<Container>(containerList.subList(0, amount));
 			containerList.removeAll(cargo);
 			return cargo;
+		} else {
+			logger.debug("Can't get from warehouse with " + getRealSize() + " size " + amount + " containers.");
 		}
 		return null;
 	}
 	/**
-	* @return total size in containers of warehouse
+	* @return total size (in containers) of warehouse
 	*/
 	public int getSize(){
 		return size;
@@ -59,7 +65,7 @@ public class Warehouse {
 	}
 
 	/**
-	 * @return number of cantainers that warehouse can take
+	 * @return number of cantainers that warehouse can take now
 	 */
 	public int getFreeSize(){
 		return size - containerList.size();
@@ -69,36 +75,4 @@ public class Warehouse {
 		return lock;
 	}*/
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-
-		Warehouse warehouse = (Warehouse) o;
-
-		if (size != warehouse.size) {
-			return false;
-		}
-		return containerList != null ? containerList.equals(warehouse.containerList) : warehouse.containerList == null;
-
-	}
-
-	@Override
-	public int hashCode() {
-		int result = containerList != null ? containerList.hashCode() : 0;
-		result = 31 * result + size;
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "Warehouse{" +
-				"containerList=" + containerList +
-				", size=" + size +
-				'}';
-	}
 }

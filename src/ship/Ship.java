@@ -1,15 +1,14 @@
 package ship;
 
-import java.util.List;
-import java.util.Random;
-
 import org.apache.log4j.Logger;
-
 import port.Berth;
 import port.Port;
 import port.PortException;
 import warehouse.Container;
 import warehouse.Warehouse;
+
+import java.util.List;
+import java.util.Random;
 
 public class Ship implements Runnable {
 
@@ -58,64 +57,31 @@ public class Ship implements Runnable {
 
 	//without this methods
 	// 1) class barely testable
-	// 2) real ship must have information about this loaded factor
+	// 2) real ship must have information about this load factor
+
+	/*
+	*  the volume of ship warehouse at all
+	 */
 	public int getSize() {
 		return shipWarehouse.getSize();
 	}
 
+	/*
+	*  number of containers that ship warehouse contains now
+	*/
 	public int getRealSize() {
 		return shipWarehouse.getRealSize();
 	}
 
+	/*
+	*  number of containers that ship warehouse can place in it's warehouse now
+	*/
 	public int getFreeSize() {
 		return shipWarehouse.getFreeSize();
 	}
 
 	public void stopThread() {
 		stopThread = true;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-
-		Ship ship = (Ship) o;
-
-		if (stopThread != ship.stopThread) {
-			return false;
-		}
-		if (name != null ? !name.equals(ship.name) : ship.name != null) {
-			return false;
-		}
-		if (port != null ? !port.equals(ship.port) : ship.port != null) {
-			return false;
-		}
-		return shipWarehouse != null ? shipWarehouse.equals(ship.shipWarehouse) : ship.shipWarehouse == null;
-
-	}
-
-	@Override
-	public int hashCode() {
-		int result = (stopThread ? 1 : 0);
-		result = 31 * result + (name != null ? name.hashCode() : 0);
-		result = 31 * result + (port != null ? port.hashCode() : 0);
-		result = 31 * result + (shipWarehouse != null ? shipWarehouse.hashCode() : 0);
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "Ship{" +
-				"stopThread=" + stopThread +
-				", name='" + name + '\'' +
-				", port=" + port +
-				", shipWarehouse=" + shipWarehouse +
-				'}';
 	}
 
 	public void run() {
@@ -135,30 +101,25 @@ public class Ship implements Runnable {
 		Thread.sleep(1000);
 	}
 
-
+/* it is strange situation in which the ship leaves the port in case of absence of free berth.
+				 Really it must wait staying in queue until the berth will be freed by another ship.
+				 So if the ship wait we are needn't the indicators of success of locking berth
+				 See the realization of isLockeBerth method and Port class
+*/
 	private void inPort() throws PortException, InterruptedException {
-
-		boolean isLockedBerth = false;
 		Berth berth = null;
 		try {
-			isLockedBerth = port.lockBerth(this);
-			
-			if (isLockedBerth) {
-				berth = port.getBerth(this);
+			port.lockBerth(this);
+     	berth = port.getBerth(this);
 				logger.debug("Корабль " + name + " пришвартовался к причалу " + berth.getId());
 				ShipAction action = getNextAction();
 				executeAction(action, berth);
-			} else {
-				logger.debug("Кораблю " + name + " отказано в швартовке к причалу ");
-			}
-		} finally {
-			if (isLockedBerth){
+		 } finally {
 				port.unlockBerth(this);
-				logger.debug("Корабль " + name + " отошел от причала " + berth.getId());
+				logger.debug("Корабль " + name + " отошел от причала " +
+						berth == null ? null : berth.getId());
 			}
 		}
-		
-	}
 
 	private void executeAction(ShipAction action, Berth berth) throws InterruptedException {
 		switch (action) {
@@ -175,19 +136,20 @@ public class Ship implements Runnable {
 
 		int containersNumberToMove = containersToPortCount();// change old method to special method. Explanation see
 		// after
-		boolean result = false;
-
 		logger.debug("Корабль " + name + " хочет загрузить " + containersNumberToMove
-				+ " контейнеров на склад порта.");
+				+ " контейнеров на склад порта. \n Сейчас склад корабля " + getSize() +
+				", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 
-		result = berth.add(shipWarehouse, containersNumberToMove);
-		
+		boolean result = result = berth.add(shipWarehouse, containersNumberToMove);
+
 		if (!result) {
 			logger.debug("Недостаточно места на складе порта для выгрузки кораблем "
-					+ name + " " + containersNumberToMove + " контейнеров.");
+					+ name + " " + containersNumberToMove + " контейнеров.\nСейчас склад корабля " + getSize() +
+					", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 		} else {
 			logger.debug("Корабль " + name + " выгрузил " + containersNumberToMove
-					+ " контейнеров в порт.");
+					+ " контейнеров в порт.\nСейчас склад корабля " + getSize() +
+					", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 			
 		}
 		return result;
@@ -196,19 +158,22 @@ public class Ship implements Runnable {
 	private boolean loadFromPort(Berth berth) throws InterruptedException {
 		
 		int containersNumberToMove = containersFromPortCount(); //old method to special method. Explanation see after
-		boolean result = false;
+	    logger.debug("Корабль " + name + " хочет загрузить " + containersNumberToMove
+				+ " контейнеров со склада порта.\nСейчас склад корабля " + getSize() +
+				", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 
-		logger.debug("Корабль " + name + " хочет загрузить " + containersNumberToMove
-				+ " контейнеров со склада порта.");
-		
-		result = berth.get(shipWarehouse, containersNumberToMove);
+		boolean result = berth.get(shipWarehouse, containersNumberToMove);
 		
 		if (result) {
 			logger.debug("Корабль " + name + " загрузил " + containersNumberToMove
-					+ " контейнеров из порта.");
+					+ " контейнеров из порта.\nСейчас склад корабля " + getSize() +
+					", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 		} else {
 			logger.debug("Недостаточно места на на корабле " + name
-					+ " для погрузки " + containersNumberToMove + " контейнеров из порта.");
+					+ " для погрузки " + containersNumberToMove + " контейнеров из порта."+
+					"\nСейчас склад корабля " + getSize() +
+					", из них свободно " + getFreeSize() + ", заполнено " + getRealSize() +
+					" или в порту нет такого количества контейнеров");
 		}
 		
 		return result;

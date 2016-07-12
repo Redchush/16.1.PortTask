@@ -1,11 +1,11 @@
 package main;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import port.Port;
 import ship.Ship;
 import warehouse.Container;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
 
@@ -76,7 +76,5 @@ public class Main {
 		ship1.stopThread();				// заканчиваем работу
 		ship2.stopThread();
 		ship3.stopThread();
-
 	}
-
 }
