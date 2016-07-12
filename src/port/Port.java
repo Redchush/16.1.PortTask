@@ -66,6 +66,7 @@ public class Port {
     */
 	public boolean lockBerth(Ship ship) throws InterruptedException {
 		boolean result = false;
+		logger.debug("Корабль " + ship.getName() + " ждет свободного причала");
 		Berth berth = berthList.take();
 		usedBerths.put(ship, berth);
 		return true;

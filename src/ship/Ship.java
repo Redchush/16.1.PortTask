@@ -109,15 +109,14 @@ public class Ship implements Runnable {
 	private void inPort() throws PortException, InterruptedException {
 		Berth berth = null;
 		try {
-			port.lockBerth(this);
-     	berth = port.getBerth(this);
+				port.lockBerth(this);
+				berth = port.getBerth(this);
 				logger.debug("Корабль " + name + " пришвартовался к причалу " + berth.getId());
 				ShipAction action = getNextAction();
 				executeAction(action, berth);
 		 } finally {
 				port.unlockBerth(this);
-				logger.debug("Корабль " + name + " отошел от причала " +
-						berth == null ? null : berth.getId());
+				logger.debug("Корабль " + name + " отошел от причала " + (berth == null ? null : berth.getId()));
 			}
 		}
 
@@ -140,7 +139,7 @@ public class Ship implements Runnable {
 				+ " контейнеров на склад порта. \n Сейчас склад корабля " + getSize() +
 				", из них свободно " + getFreeSize() + ", заполнено " + getRealSize());
 
-		boolean result = result = berth.add(shipWarehouse, containersNumberToMove);
+		boolean result = berth.add(shipWarehouse, containersNumberToMove);
 
 		if (!result) {
 			logger.debug("Недостаточно места на складе порта для выгрузки кораблем "
